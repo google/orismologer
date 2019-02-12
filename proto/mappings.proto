@@ -1,0 +1,101 @@
+/*
+Copyright 2019 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+syntax = "proto3";
+package mappings;
+import "proto/paths.proto";
+
+/*
+Top level message containing all transformations/defined variables.
+ */
+// TODO: Validate: NocPaths should not be redefined.
+message Transformations {
+  repeated Transformation transformations = 1;
+}
+
+/*
+Top level message containing all mappings between OpenConfig paths and
+non-OpenConfig paths (NocPaths).
+*/
+message Mappings {
+  // Represents nodes in an OpenConfig model.
+  repeated OpenConfigNode nodes = 1;
+}
+
+/*
+Top level message mapping parts of the MIB tree to known vendors.
+ */
+message VendorOids {
+  string vendor_root = 1;
+  map<string, string> vendors = 2;
+}
+
+/*
+Stores an OpenConfig path (and potentially some of its subpaths) and all the
+ways valid values for that path can be retrieved from non-OpenConfig paths.
+ */
+message OpenConfigNode {
+  /*
+  A valid OpenConfig sub-path.
+  The full path is formed by recursively concatenating the sub-paths of
+  nested node messages.
+  Paths may optionally specify the OpenConfig revisions for which they are
+  valid.
+   */
+  // TODO: Validate OC path; a path in a top level node must start
+  // from root (/)
+  // TODO: Validate. If subpath contains index parameter
+  // (/path[param=value]) this index param must be mapped in the map field.
+  OpenConfigPath subpath = 1;
+
+  /*
+  Specifies a variable (by its identifier) which produces valid output for the
+  OpenConfig subpath of this node.
+   */
+  // TODO: Validate that value is a declared identifier
+  // (in scope).
+  string bind = 2;
+
+  /*
+  Tells message consumers to bind a variable in an OpenConfig path to a
+  variable in a non-OpenConfig path.
+  Eg: An OC path might be given as "/components/component[name=value] and an OID
+  might be "1.3.index. Binding `value` to `index` means that the same value
+  one should always correspond to the same value for the other (eg: name
+  'cpu_1' should always correspond to index '1'.
+   */
+  map<string, string> map = 3;
+
+  // Represents the children of this node.
+  repeated OpenConfigNode children = 4;
+}
+
+// Represents a function which transforms data (eg: to OpenConfig format).
+message Transformation {
+  /*
+  The identifier to which the transformation is bound.
+  Can be referenced in expressions via this value.
+  */
+  // TODO: Validate: no space or -, at least one non-numeric char
+  string bind = 1;
+
+  // Represents processing applied to variables.
+  // TODO: Validate: Expression compiles, variables have been
+  // defined etc.
+  repeated string expressions = 2;
+
+  repeated NocPath noc_paths = 3;
+}
